@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# --------------------------------------------------------------------------------------------
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License. See License.txt in the project root for license information.
+# --------------------------------------------------------------------------------------------
+#
+
+from __future__ import print_function
+
+import argparse
+import os
+import textwrap
+
+from common.config import load_config
+from common.logger import init_logging
+from resolver.resolver import download_artifact
+
+
+def main():
+    load_config()
+    init_logging(os.path.expanduser(os.path.join("~", ".pymvn", "pymvn.log")))
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter, allow_abbrev=False
+    )
+    parser.add_argument(
+        "-m",
+        "--maven",
+        action="store",
+        type=str,
+        dest="MAVEN_CENTRAL",
+        default="google",
+        help=textwrap.dedent(
+            """\
+            The name of maven central to download artifacts from
+            """
+        ),
+    )
+    parser.add_argument(
+        "-t",
+        "--transitive",
+        action="store_true",
+        dest="DOWNLOAD_DEPENDENCIES",
+        default=False,
+        help=textwrap.dedent(
+            """\
+            Whether or not to download all the transitive dependencies
+            """
+        ),
+    )
+    parser.add_argument(
+        "ARTIFACT_COORDINATE",
+        nargs="?",
+        type=str,
+        default=None,
+        # required=True,
+        help=textwrap.dedent(
+            """\
+            The possible coordinates are:
+
+            - groupId:artifactId:version
+            - groupId:artifactId:packaging:version
+            - groupId:artifactId:packaging:classifier:version
+
+            For more details on how to maven coordinate is defined visit
+            http://maven.apache.org/pom.html#Maven_Coordinates
+            """
+        ),
+    )
+
+    args = parser.parse_args()
+    if not args.ARTIFACT_COORDINATE:
+        print("Artifact maven coordinate must be specified")
+        exit(1)
+
+    values = args.ARTIFACT_COORDINATE.split(":")
+    if not values or len(values) < 3:
+        print("Illegal artifact maven coordinate: %s" % args.ARTIFACT_COORDINATE)
+        exit(2)
+
+    # download_artifact(name="androidx.cardview:cardview:aar:1.0.0", repo_name="google", download_deps=True)
+    download_artifact(
+        args.ARTIFACT_COORDINATE, args.MAVEN_CENTRAL, args.DOWNLOAD_DEPENDENCIES
+    )
+
+
+if __name__ == "__main__":
+    main()
